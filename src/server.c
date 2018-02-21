@@ -1,38 +1,62 @@
-/*
- * shm-client - client program to demonstrate shared memory.
- */
+#include <sys/msg.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <unistd.h>
 #include <stdio.h>
-
-#define SHMSZ     27
+#include "helper.h"
 
 #define READY 1
-#define GOT_IT 0 
+#define  GOT_IT 0 
 #define NOT_READY -1
 
-typedef struct _mem_struct{
-	int status;
-	int data[4];
-} mem_struct_t;
 
-main()
+void die(char *s)
 {
+  perror(s);
+  exit(1);
+}
+
+int main()
+{
+    	
+	uid_t uid = getuid();	
+	printf("key %d \n" , (int) uid);
+	
+	int msqid;
+    	key_t key;
+    	msgbuf_t rcvbuffer;
+
+    	key = 1234;
+	
+	if ((msqid = msgget(key, 0666)) < 0)
+		die("msgget()");
+
+
+	//Receive an answer of message type 1.
+	if (msgrcv(msqid, &rcvbuffer, sizeof(rcvbuffer), 1, 0) < 0)
+		die("msgrcv");
+	
+	printf("Key value is= %d \n", rcvbuffer.shm_key);
+
+	/**************** SHMMMMMMMM **************/
+
 	int shm_id;
-	key_t key;
+	key_t shm_key;
 	mem_struct_t *load;
 
 	/*
 	* We need to get the segment named
 	* "5678", created by the server.
 	*/
-	key = 5678;
+
+	shm_key = rcvbuffer.shm_key;
 
 	/*
 	* Locate the segment.
 	*/
-	if ((shm_id = shmget(key, sizeof(load), 0666)) < 0) {
+	if ((shm_id = shmget(shm_key, sizeof(load), 0666)) < 0) {
 		perror("shmget");
 		exit(1);
 	}
@@ -49,10 +73,15 @@ main()
 	* Now read what the server put in the memory.
 	*/
 	for (int i=0; i < 4; i++){
-		printf("Printing load[%d] \n" , load->data[i]);
+		load->data[i] = load->data[i]*2;
+		//printf("Printing load[%d] \n" , load->data[i]);
 	}
 
 	load->status = GOT_IT;
 	printf("Client has finished receiving data \n");
-	exit(0);
+	exit(0); 
+
+
+
+
 }

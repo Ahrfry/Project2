@@ -4,27 +4,13 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <stdio.h>
-
-#define READY 1
-#define  GOT_IT 0 
-#define NOT_READY -1
-
-typedef struct _mem_struct{
-	int status;
-	int data[4];
-} mem_struct_t;
+#include "helper.h"
 
 void die(char *s)
 {
 	perror(s);
   	exit(1);
 }
-
-struct msgbuf
-{
-	long   mtype;
-	int shm_key;
-};
 
 main()
 {
@@ -50,7 +36,7 @@ main()
 	/*
 	* Now we attach the segment to our data space.
 	*/
-	if ((load = (mem_struct_t *) shmat(shm_id, NULL, 0)) == -1) {
+	if ((load = shmat(shm_id, NULL, 0)) == -1) {
 		perror("shmat");
 		exit(1);
 	}
@@ -75,7 +61,7 @@ main()
 	int msqid;
 	int msgflg = IPC_CREAT | 0666;
     	key_t msg_key;
-    	struct msgbuf sbuf;
+    	msgbuf_t sbuf;
     	size_t buflen;
 
     	msg_key = 1234;
